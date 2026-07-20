@@ -4,7 +4,7 @@
 
 **FN LiteTerm — 轻量、简单、即开即用的 fnOS 终端**
 
-[![GitHub Release](https://img.shields.io/github/v/release/gsjaylab/liteterm?style=flat-square)](https://github.com/gsjaylab/liteterm/releases/latest)
+[![GitHub Release](https://img.shields.io/github/v/release/gsjaylab/lite-term?style=flat-square)](https://github.com/gsjaylab/liteterm/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7-blue?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
