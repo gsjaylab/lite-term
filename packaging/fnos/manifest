@@ -1,0 +1,16 @@
+appname               = liteterm
+version               = 0.0.1
+display_name          = 轻终端
+desc                  = 轻量、简单、即开即用的 fnOS 终端。
+source                = thirdparty
+platform              = x86
+# Package artifact architecture: arch="x86_64"
+maintainer            = GSJayLab
+maintainer_url        = https://github.com/gsjaylab/liteterm
+distributor           = GSJayLab
+distributor_url       = https://github.com/gsjaylab/liteterm
+desktop_uidir         = ui
+desktop_applaunchname = liteterm.main
+ctl_stop=true
+checkport=false
+disable_authorization_path=true

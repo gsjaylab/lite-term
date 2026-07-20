@@ -1,0 +1,7 @@
+/build/
+/dist/
+/package/
+/web/node_modules/
+/internal/web/dist/*
+!/internal/web/dist/.gitkeep
+.DS_Store

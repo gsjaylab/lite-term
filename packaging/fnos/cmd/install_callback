@@ -1,0 +1,11 @@
+#!/bin/bash
+set -u
+
+: "${TRIM_TEMP_LOGFILE:?TRIM_TEMP_LOGFILE is required}"
+
+if [ ! -x /bin/bash ]; then
+  printf '%s\n' '轻终端需要可执行的 /bin/bash。' >>"${TRIM_TEMP_LOGFILE}"
+  exit 1
+fi
+
+exit 0

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>轻终端 · FN LiteTerm</title>
+  </head>
+  <body>
+    <main class="shell" aria-label="轻终端">
+      <section class="terminal-frame" aria-label="远程终端">
+        <div class="terminal-bar">
+          <div class="window-controls" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="connection" aria-live="polite">
+            <span class="status-lamp" aria-hidden="true"></span>
+            <span id="status" role="status" data-state="connecting">正在连接…</span>
+          </div>
+        </div>
+        <div id="terminal"></div>
+      </section>
+
+      <footer>
+        <p>关闭页面将结束当前终端会话。</p>
+        <button id="retry" type="button" hidden>重新打开终端</button>
+      </footer>
+    </main>
+
+    <dialog id="login-dialog" aria-labelledby="login-title">
+      <form id="login-form">
+        <h1 id="login-title">连接到终端</h1>
+        <p class="login-description">使用本机 SSH 服务登录 fnOS。</p>
+        <label>端口<input id="login-port" name="port" type="number" min="1" max="65535" value="22" required></label>
+        <label>用户名<input id="login-username" name="username" type="text" maxlength="32" autocomplete="username" required></label>
+        <label>密码<input id="login-password" name="password" type="password" maxlength="1024" autocomplete="current-password"></label>
+        <label class="remember"><input id="login-remember" name="remember" type="checkbox">记住端口、用户名和密码</label>
+        <p id="login-message" role="status" aria-live="polite"></p>
+        <div class="login-actions">
+          <button id="test-connection" type="button">测试</button>
+          <button id="connect-terminal" type="submit">连接</button>
+        </div>
+        <button id="clear-credentials" class="clear-credentials" type="button" hidden>清除已保存信息</button>
+        <p class="storage-note">登录信息保存在此设备，并仅供当前 fnOS 用户使用。</p>
+      </form>
+    </dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

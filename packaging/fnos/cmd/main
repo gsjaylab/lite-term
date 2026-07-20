@@ -1,0 +1,80 @@
+#!/bin/bash
+set -u
+
+: "${TRIM_APPDEST:?TRIM_APPDEST is required}"
+: "${TRIM_PKGETC:?TRIM_PKGETC is required}"
+: "${TRIM_PKGVAR:?TRIM_PKGVAR is required}"
+: "${TRIM_PKGTMP:?TRIM_PKGTMP is required}"
+: "${TRIM_TEMP_LOGFILE:?TRIM_TEMP_LOGFILE is required}"
+
+binary="${TRIM_APPDEST}/bin/liteterm"
+pid_file="${TRIM_PKGTMP}/liteterm.pid"
+log_file="${TRIM_PKGVAR}/liteterm.log"
+
+report_error() {
+  printf '%s\n' "$1" >>"${TRIM_TEMP_LOGFILE}"
+}
+
+read_pid() {
+  [ -r "${pid_file}" ] || return 1
+  pid=$(head -n 1 "${pid_file}" | tr -d '[:space:]')
+  case "${pid}" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+}
+
+is_ours() {
+  read_pid || return 1
+  [ -e "/proc/${pid}/exe" ] || return 1
+  [ "$(readlink -f "/proc/${pid}/exe" 2>/dev/null)" = "${binary}" ]
+}
+
+status_service() {
+  if is_ours && kill -0 "${pid}" 2>/dev/null; then
+    return 0
+  fi
+  rm -f "${pid_file}"
+  return 3
+}
+
+start_service() {
+  if status_service; then
+    return 0
+  fi
+  [ -x "${binary}" ] || { report_error "轻终端可执行文件不存在或不可执行：${binary}"; return 1; }
+  mkdir -p "${TRIM_PKGETC}" "${TRIM_PKGVAR}" "${TRIM_PKGTMP}"
+  LITETERM_LISTEN="${TRIM_APPDEST}/app.sock" LITETERM_DATA_DIR="${TRIM_PKGVAR}" "${binary}" >>"${log_file}" 2>&1 &
+  pid=$!
+  printf '%s\n' "${pid}" >"${pid_file}"
+  sleep 1
+  if ! is_ours || ! kill -0 "${pid}" 2>/dev/null; then
+    rm -f "${pid_file}"
+    report_error "轻终端启动失败，请检查 ${log_file}"
+    return 1
+  fi
+}
+
+stop_service() {
+  if ! is_ours; then
+    rm -f "${pid_file}"
+    return 0
+  fi
+  kill -TERM "${pid}" 2>/dev/null || true
+  count=0
+  while kill -0 "${pid}" 2>/dev/null && [ "${count}" -lt 5 ]; do
+    sleep 1
+    count=$((count + 1))
+  done
+  if kill -0 "${pid}" 2>/dev/null; then
+    report_error "轻终端未能在五秒内停止（PID ${pid}）"
+    return 1
+  fi
+  rm -f "${pid_file}"
+}
+
+case "${1:-}" in
+  start) start_service ;;
+  stop) stop_service ;;
+  status) status_service ;;
+  *) report_error "Usage: main {start|stop|status}"; exit 1 ;;
+esac

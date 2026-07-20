@@ -1,0 +1,126 @@
+name: build release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: release version, for example 0.0.1
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  FNPACK_VERSION: 1.2.3
+
+jobs:
+  build:
+    name: 构建轻终端（${{ matrix.platform }}）
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [x86, arm]
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 校验版本号
+        id: info
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${INPUT_VERSION#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version: $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: 构建应用
+        run: |
+          ./scripts/build-web.sh
+          ./scripts/build-backend.sh "${{ matrix.platform }}"
+          ./scripts/assemble-app.sh
+          ./scripts/update-manifest.sh "${{ steps.info.outputs.version }}" "${{ matrix.platform }}"
+
+      - name: 下载 fnpack 并打包 FPK
+        shell: bash
+        env:
+          VERSION: ${{ steps.info.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 \
+            -o /tmp/fnpack \
+            "https://static2.fnnas.com/fnpack/fnpack-${FNPACK_VERSION}-linux-amd64"
+          chmod +x /tmp/fnpack
+          /tmp/fnpack build --directory package
+          fpk_file=$(find . -maxdepth 1 -type f -name '*.fpk' -print -quit)
+          test -n "$fpk_file"
+          mkdir -p dist
+          mv "$fpk_file" "dist/liteterm-${VERSION}-${PLATFORM}.fpk"
+          sha256sum "dist/liteterm-${VERSION}-${PLATFORM}.fpk"
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: liteterm-${{ matrix.platform }}
+          path: dist/*.fpk
+          if-no-files-found: error
+
+  release:
+    name: 发布轻终端
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载安装包
+        uses: actions/download-artifact@v4
+        with:
+          pattern: liteterm-*
+          path: dist
+          merge-multiple: true
+
+      - name: 创建 GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${VERSION_INPUT#v}"
+          tag="v${version}"
+          build_time=$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S %Z')
+          cat > release-notes.md <<EOF
+          ## 轻终端 ${tag}
+
+          FN LiteTerm — 轻量、简单、即开即用的 fnOS 终端。
+
+          | 文件 | 架构 | 适用设备 |
+          |------|------|----------|
+          | \`liteterm-${version}-x86.fpk\` | x86_64 | Intel/AMD NAS |
+          | \`liteterm-${version}-arm.fpk\` | ARM64 | ARM NAS |
+
+          构建时间：${build_time}
+          EOF
+          gh release create "$tag" dist/*.fpk \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "$GITHUB_SHA" \
+            --title "轻终端 ${tag}" \
+            --notes-file release-notes.md

@@ -1,0 +1,14 @@
+{
+  ".url": {
+    "liteterm.main": {
+      "title": "轻终端",
+      "icon": "images/liteterm_icon_{0}.png",
+      "type": "iframe",
+      "protocol": "",
+      "gatewayPrefix": "/app/liteterm",
+      "gatewaySocket": "app.sock",
+      "url": "/app/liteterm",
+      "allUsers": true
+    }
+  }
+}

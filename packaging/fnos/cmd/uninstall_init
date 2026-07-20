@@ -1,0 +1,17 @@
+#!/bin/bash
+set -u
+
+: "${TRIM_APPDEST:?TRIM_APPDEST is required}"
+: "${TRIM_PKGETC:?TRIM_PKGETC is required}"
+: "${TRIM_PKGVAR:?TRIM_PKGVAR is required}"
+: "${TRIM_PKGTMP:?TRIM_PKGTMP is required}"
+: "${TRIM_TEMP_LOGFILE:?TRIM_TEMP_LOGFILE is required}"
+
+script_dir=$(cd "$(dirname "$0")" && pwd)
+if ! "${script_dir}/main" stop; then
+  printf '%s\n' '卸载时无法停止轻终端。' >>"${TRIM_TEMP_LOGFILE}"
+  exit 1
+fi
+
+rm -f "${TRIM_PKGTMP}/liteterm.pid" "${TRIM_PKGVAR}/liteterm.log"
+exit 0
